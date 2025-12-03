@@ -1,76 +1,62 @@
+# app.py
 import streamlit as st
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
-import pickle
+import numpy as np
+import joblib
+from sklearn.linear_model import LinearRegression
 
-# Title
-st.title("🎵 Spotify Prediction App")
-st.write("Aplikasi Machine Learning untuk memprediksi popularitas lagu menggunakan Streamlit.")
+st.title("Mini Projek Nabila DL")
+st.write("Aplikasi Streamlit untuk prediksi menggunakan model ML")
 
-# Load Data
-@st.cache_data
-def load_data():
-    df = pd.read_csv("spotify_modeled_output.csv")
-    return df
+# ===========================
+# Upload file CSV
+# ===========================
+st.header("Upload File CSV")
+uploaded_file = st.file_uploader("Pilih file CSV", type=["csv"])
 
-df = load_data()
-st.subheader("📌 Data Sample")
-st.write(df.head())
+if uploaded_file is not None:
+    try:
+        df = pd.read_csv(uploaded_file)
+        st.write("Data berhasil diupload:")
+        st.dataframe(df.head())
+    except Exception as e:
+        st.error(f"Gagal membaca CSV: {e}")
 
-# Select Features & Target
-features = st.multiselect("Pilih fitur model:", df.columns.tolist(), default=df.columns[1:7])
-target = st.selectbox("Pilih kolom target:", df.columns.tolist(), index=0)
+# ===========================
+# Load model ML (jika sudah ada)
+# ===========================
+st.header("Load Model Machine Learning")
+model_file = st.file_uploader("Upload file model (.joblib)", type=["joblib"])
 
-if st.button("Train Model"):
-    X = df[features]
-    y = df[target]
+if model_file is not None:
+    try:
+        model = joblib.load(model_file)
+        st.success("Model berhasil di-load!")
+    except Exception as e:
+        st.error(f"Gagal load model: {e}")
 
-    # Split dataset
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# ===========================
+# Input data manual dan prediksi
+# ===========================
+st.header("Prediksi Manual")
+x_input = st.number_input("Masukkan nilai X untuk prediksi:", value=0)
 
-    # Scaling
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
+if st.button("Prediksi"):
+    try:
+        if 'model' in locals():
+            # jika ada model upload
+            y_pred = model.predict(np.array([[x_input]]))
+            st.write(f"Hasil prediksi: {y_pred[0]}")
+        else:
+            # fallback dummy model
+            dummy_model = LinearRegression()
+            dummy_model.coef_ = np.array([2])
+            dummy_model.intercept_ = 5
+            y_pred = dummy_model.coef_[0] * x_input + dummy_model.intercept_
+            st.write(f"Hasil prediksi (dummy model): {y_pred}")
+    except Exception as e:
+        st.error(f"Gagal prediksi: {e}")
 
-    # Train Model
-    model = RandomForestClassifier()
-    model.fit(X_train_scaled, y_train)
-
-    # Prediction
-    y_pred = model.predict(X_test_scaled)
-    acc = accuracy_score(y_test, y_pred)
-
-    st.success(f"🎉 Model berhasil dilatih dengan akurasi: **{acc:.2f}**")
-
-    # Save model pickle
-    with open("model_spotify.pkl", "wb") as file:
-        pickle.dump((model, scaler, features, target), file)
-
-    st.info("Model berhasil disimpan sebagai `model_spotify.pkl`")
-
-# Predict New Data
-st.subheader("🔮 Prediksi Data Baru")
-try:
-    with open("model_spotify.pkl", "rb") as file:
-        model, scaler, selected_features, target_name = pickle.load(file)
-
-    input_data = {}
-    for col in selected_features:
-        input_data[col] = st.number_input(f"Masukkan nilai untuk {col}:", value=0.0)
-
-    if st.button("Predict"):
-        input_df = pd.DataFrame([input_data])
-        input_scaled = scaler.transform(input_df)
-        result = model.predict(input_scaled)
-
-        st.success(f"📌 Prediksi untuk target **{target_name}** adalah: **{result[0]}**")
-
-except:
-    st.warning("⚠ Latih model dulu sebelum melakukan prediksi!")
 
 
 

@@ -13,7 +13,7 @@ st.write("Aplikasi Machine Learning untuk memprediksi popularitas lagu menggunak
 # Load Data
 @st.cache_data
 def load_data():
-    df = pd.read_csv("spotify_data_clean.csv")
+    df = pd.read_csv("spotify_modeled_output.csv")
     return df
 
 df = load_data()
@@ -71,5 +71,6 @@ try:
 
 except:
     st.warning("⚠ Latih model dulu sebelum melakukan prediksi!")
+
 
 
